@@ -31,31 +31,34 @@ Apart from basic challenge, I implemented a **concurrent batching** pattern thro
 the **429: Too many request** error. For simplicity, here I fixed the request rate to 10 per time.
 
 Here is the code snippet of the generator:
-`async function* consumeTokens(tokensAddresses = []) {
-    let sliceIndex = 0;
-    let sliceSize = 10;
-    const alchemy = await getAlchemy();
-    while (sliceIndex < tokensAddresses.length) {
-      const tokens = tokensAddresses.slice(sliceIndex, sliceIndex + sliceSize);
-      const promises = tokens.map(
-        address =>
-          new Promise(resolve => {
-            alchemy.core.getTokenMetadata(address).then(data => {
-              resolve({ ...data, address });
-            });
-          })
-      );
-      const results = await Promise.all(promises);
-      sliceIndex += sliceSize;
-      yield results;
-    }
-  }`
+
+```javascript
+async function* consumeTokens(tokensAddresses = []) {
+  let sliceIndex = 0;
+  let sliceSize = 10;
+  const alchemy = await getAlchemy();
+  while (sliceIndex < tokensAddresses.length) {
+    const tokens = tokensAddresses.slice(sliceIndex, sliceIndex + sliceSize);
+    const promises = tokens.map(
+      address =>
+        new Promise(resolve => {
+          alchemy.core.getTokenMetadata(address).then(data => {
+            resolve({ ...data, address });
+          });
+        })
+    );
+    const results = await Promise.all(promises);
+    sliceIndex += sliceSize;
+    yield results;
+  }
+}
+```
 
 Here is how I consumed:
 
-`...
+```javascript
 const dataObjects = [];
-    for await (let info of consumeTokens(addresses)) {
-      dataObjects.push(...info);
-    }
-...`
+for await (let info of consumeTokens(addresses)) {
+  dataObjects.push(...info);
+}
+```
