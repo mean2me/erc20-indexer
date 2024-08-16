@@ -14,6 +14,7 @@ import { ethers } from 'ethers';
 
 import TokenCard from './TokenCard';
 import { FaSearch } from 'react-icons/fa';
+import Loading from './Loading';
 
 function App() {
   const [userAddress, setUserAddress] = useState('');
@@ -21,6 +22,7 @@ function App() {
   const [hasQueried, setHasQueried] = useState(false);
   const [tokenDataObjects, setTokenDataObjects] = useState([]);
   const [signer, setSigner] = useState();
+  const [loading, setLoading] = useState(false);
 
   /**
    * Note for the reader or code reviewer:
@@ -67,13 +69,18 @@ function App() {
 
     const addresses = data.tokenBalances.map(token => token.contractAddress);
 
-    const dataObjects = [];
-    for await (let info of consumeTokens(addresses)) {
-      dataObjects.push(...info);
-    }
+    setLoading(true);
+    try {
+      const dataObjects = [];
+      for await (let info of consumeTokens(addresses)) {
+        dataObjects.push(...info);
+      }
 
-    setTokenDataObjects(dataObjects);
-    setHasQueried(true);
+      setTokenDataObjects(dataObjects);
+      setHasQueried(true);
+    } finally {
+      setLoading(false);
+    }
   }
 
   const handleMetamaskButtonClick = useCallback(async _signer => {
@@ -116,6 +123,7 @@ function App() {
       backgroundColor={'gray.900'}
       overflowX={'hidden'}
     >
+      <Loading show={loading} />
       <Box
         sx={{
           position: 'fixed',
