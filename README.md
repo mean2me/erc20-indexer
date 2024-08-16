@@ -24,3 +24,38 @@ Here are a few challenge suggestions:
 7. There are ways to make this app faster... can you implement some of them? How can the query be made _even_ quicker?
 8. Can you add ENS support for inputs?
 9. Completely open-ended!! Use this as the base for your next hackathon project, dream company or personal expedition :)
+
+## Solution
+
+Apart from basic challenge, I implemented a **concurrent batching** pattern through an **async generator** to prevent
+the **429: Too many request** error. For simplicity, here I fixed the request rate to 10 per time.
+
+Here is the code snippet of the generator:
+`async function* consumeTokens(tokensAddresses = []) {
+    let sliceIndex = 0;
+    let sliceSize = 10;
+    const alchemy = await getAlchemy();
+    while (sliceIndex < tokensAddresses.length) {
+      const tokens = tokensAddresses.slice(sliceIndex, sliceIndex + sliceSize);
+      const promises = tokens.map(
+        address =>
+          new Promise(resolve => {
+            alchemy.core.getTokenMetadata(address).then(data => {
+              resolve({ ...data, address });
+            });
+          })
+      );
+      const results = await Promise.all(promises);
+      sliceIndex += sliceSize;
+      yield results;
+    }
+  }`
+
+Here is how I consumed:
+
+`...
+const dataObjects = [];
+    for await (let info of consumeTokens(addresses)) {
+      dataObjects.push(...info);
+    }
+...`
